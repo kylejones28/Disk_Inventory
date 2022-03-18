@@ -4,7 +4,8 @@
 --/* 3/4/2022		kjones			Initial creation of disk database */
 --/*
 --/*3/11/2022		kjones			Updating disk database*/
---/*															*/
+--/*
+--/*3/18/2022		kjones			Updating disk database */
 --/************************************************************/
 
 use master;
@@ -346,3 +347,78 @@ SELECT borrower_id as Borrower_id, disk_id as Disk_id, CAST
 		( borrowed_date as date) as Borrowed_date, returned_date as Return_date
 FROM disk_has_borrower
 WHERE returned_date IS NULL;
+
+
+--Start of Project 4
+--1.
+SELECT 'Disk Name'=disk_name, release_date, 
+	disk_type.description, genre.description,
+		status.description     ---check column names & format
+FROM Disk
+JOIN disk_type
+	ON disk.disk_type_id = disk_type.disk_type_id
+JOIN genre
+	ON disk.genre_id = genre.genre_id
+JOIN status	
+	ON disk.status_id = status.status_id
+ORDER BY disk_name
+;
+
+---2.
+SELECT lname, fname, disk_name, borrowed_date, 
+	returned_date  --check names
+FROM disk_has_borrower
+JOIN Borrower
+	ON disk_has_borrower.borrower_id = borrower.borrower_id
+JOIN disk
+	ON disk_has_borrower.disk_id = disk.disk_id
+ORDER BY lname
+;
+
+--3.
+SELECT disk_name,count(*)
+FROM disk_has_borrower
+JOIN disk
+	ON disk_has_borrower.disk_id = disk.disk_id
+GROUP BY disk_name
+HAVING COUNT(*) > 1
+ORDER BY disk_name
+;
+
+--4.
+SELECT disk_name, borrowed_date, returned_date, lname,
+	fname
+FROM disk
+JOIN disk_has_borrower
+	ON disk.disk_id = disk_has_borrower.disk_id
+JOIN borrower
+	ON borrower.borrower_id = disk_has_borrower.borrower_id
+WHERE returned_date IS NULL
+ORDER BY disk_name
+;
+go
+--5.
+CREATE VIEW View_Borrower_No_Loans
+AS
+	SELECT borrower_id, lname, fname
+	FROM borrower
+	WHERE borrower_id NOT IN
+		(SELECT DISTINCT borrower_id
+		FROM disk_has_borrower)
+;
+go
+SELECT lname, fname --- check column names
+FROM View_Borrower_No_Loans
+ORDER BY lname, fname
+;
+
+--6.
+SELECT lname, fname, COUNT(disk_id)  --- check column names
+FROM disk_has_borrower
+JOIN borrower
+	ON borrower.borrower_id = 
+	disk_has_borrower.borrower_id
+GROUP BY lname, fname
+HAVING COUNT(*) > 1
+ORDER BY lname, fname
+;
