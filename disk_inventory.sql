@@ -6,6 +6,7 @@
 --/*3/11/2022		kjones			Updating disk database*/
 --/*
 --/*3/18/2022		kjones			Updating disk database */
+--/*3/28/2022		kjones			ADD stored procs to ins and update disk_has_borrower
 --/************************************************************/
 
 use master;
@@ -422,3 +423,66 @@ GROUP BY lname, fname
 HAVING COUNT(*) > 1
 ORDER BY lname, fname
 ;
+
+use disk_inventorykj;
+--create proc sp_ins_disk_has_borrower
+DROP PROC IF EXISTS sp_ins_disk_has_borrower
+go
+CREATE PROC sp_ins_disk_has_borrower
+	@borrower_id int, @disk_id int, @borrowed_date
+		datetime2, @returned_date  datetime2 = NULL
+AS
+BEGIN TRY
+	INSERT disk_has_borrower
+		(borrower_id, disk_id, borrowed_date, returned_date)
+	VALUES
+		(@borrower_id, @disk_id, @borrowed_date,
+			@returned_date);
+END TRY
+BEGIN CATCH
+	PRINT 'An error occurred.';
+	PRINT 'Message: ' + CONVERT(VARCHAR(200), ERROR_MESSAGE());
+END CATCH
+go
+GRANT EXEC ON sp_ins_disk_has_borrower TO diskUserkj;
+go
+sp_ins_disk_has_borrower 2, 3, '3-27-2022', '3-28-2022'
+go
+sp_ins_disk_has_borrower 4, 5, '3-27-2022'
+go
+sp_ins_disk_has_borrower 44, 5, '3-27-2022'
+go
+DROP PROC IF EXISTS sp_ins_disk_has_borrower
+go
+CREATE PROC sp_ins_disk_has_borrower
+	@disk_has_borrower_id int, @borrower_id int, @disk_id int, @borrowed_date
+		datetime2, @returned_date  datetime2 = NULL
+AS
+BEGIN TRY
+	UPDATE disk_has_borrower
+	SET borrower_id = @borrower_id,
+		disk_id = @disk_id,
+		borrowed_date = @borrowed_date,
+		returned_date = @returned_date
+	WHERE disk_has_borrower_id = 24;
+END TRY
+--go
+--sp_ins_disk_has_borrower 24, 2, 3, '3-3-2022', '3-22-2022';
+--GO
+--select getdate()
+
+BEGIN CATCH
+	PRINT 'An error occurred.';
+	PRINT 'Message: ' + CONVERT(VARCHAR(200), ERROR_MESSAGE());
+END CATCH
+go
+GRANT EXEC ON sp_ins_disk_has_borrower TO diskUserkj;
+go
+declare @today datetime2 = getdate(); 
+exec sp_ins_disk_has_borrower 24, 2, 3, '3-27-2022', @today
+GO
+exec sp_ins_disk_has_borrower 24, 2, 3, '2-22-2022'; 
+GO
+exec sp_ins_disk_has_borrower 24, 0, 3, '2-22-2022'; 
+GO
+
