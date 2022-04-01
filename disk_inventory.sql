@@ -7,6 +7,7 @@
 --/*
 --/*3/18/2022		kjones			Updating disk database */
 --/*3/28/2022		kjones			ADD stored procs to ins and update disk_has_borrower
+--/*3/30/2022		kjones			Add sp's to ins, upd & del borrower & disk
 --/************************************************************/
 
 use master;
@@ -485,4 +486,151 @@ exec sp_ins_disk_has_borrower 24, 2, 3, '2-22-2022';
 GO
 exec sp_ins_disk_has_borrower 24, 0, 3, '2-22-2022'; 
 GO
+ 
+--- project 5
+DROP PROC IF EXISTS sp_ins_disk;
+go
+CREATE PROC sp_ins_disk
+	@disk_name nvarchar(60), @release_date date, @genre_id int, 
+		@status_id int, @disk_type_id int
+AS
+	BEGIN TRY
+		INSERT disk
+			(disk_name, release_date, genre_id, 
+				status_id, disk_type_id)
+		VALUES 
+		(@disk_name, @release_date, @genre_id, 
+		@status_id, @disk_type_id);
+	END TRY
+	BEGIN CATCH
+		PRINT 'An error occurred.';
+		PRINT 'Message: ' + CONVERT(VARCHAR(200), ERROR_MESSAGE());
+	END CATCH
+GO
+EXEC sp_ins_disk 'Dark Knight', '2/2/2013', 4,1,1
+go
+EXEC sp_ins_disk 'Dark Knight', '2/2/2013', 4,1, NULL
+go
+DROP PROC IF EXISTS sp_upd_disk;
+go
+CREATE PROC sp_upd_disk
+	@disk_id int, @disk_name nvarchar(60), @release_date date, @genre_id int, 
+		@status_id int, @disk_type_id int
+AS
+	BEGIN TRY
+		UPDATE disk
+		SET disk_name = @disk_name,
+			release_date = @release_date ,
+			genre_id = @genre_id,
+			status_id = @status_id ,
+			disk_type_id = @disk_type_id
+		WHERE disk_id = @disk_id;
+	END TRY
+	BEGIN CATCH
+		PRINT 'An error occurred.';
+			PRINT 'Message: ' + CONVERT(VARCHAR(200), ERROR_MESSAGE());
+	END CATCH
+GO
+GRANT EXECUTE ON sp_upd_disk TO diskUserkj;
+go
+EXEC sp_upd_disk 23, 'Dark Knight Updated', '2013-1-1' , 5, 4, 3
+go
+EXEC sp_upd_disk 23, 'Dark Knight Updated', '2013-1-1' , NULL, 6, 5 
+go
 
+USE [disk_inventorykj]
+GO
+DROP PROC IF EXISTS sp_del_disk;
+go
+CREATE PROC sp_del_disk
+	@disk_id int
+AS
+  BEGIN TRY
+	DELETE FROM [dbo].[disk]
+		  WHERE disk_id = @disk_id; --23
+  END TRY
+  BEGIN CATCH
+	PRINT 'An error occurred.';
+	PRINT 'Message: ' + CONVERT(VARCHAR(200), ERROR_MESSAGE());
+  END CATCH
+GO
+
+-- add perms
+GRANT EXECUTE ON sp_del_disk TO diskUserkj
+go
+EXEC sp_del_disk 26;  --Works without error
+go
+EXEC sp_del_disk 3;  --- controlled error
+go
+
+
+--- project 5 for borrower
+
+DROP PROC IF EXISTS sp_ins_borrower;
+go
+CREATE PROC sp_ins_borrower
+	 @fname nvarchar(60), @lname nvarchar(60), @phone_num varchar(15) 
+AS
+	BEGIN TRY
+		INSERT borrower
+			(fname, lname, phone_num)
+		VALUES 
+		(@fname, @lname, @phone_num);
+	END TRY
+	BEGIN CATCH
+		PRINT 'An error occurred.';
+		PRINT 'Message: ' + CONVERT(VARCHAR(200), ERROR_MESSAGE());
+	END CATCH
+GO
+EXEC sp_ins_borrower 'Christopher', 'Robin', '253-454-7898'
+go
+EXEC sp_ins_borrower 'Christopher', NULL,  '253-454-7898'
+go
+DROP PROC IF EXISTS sp_upd_borrower;
+go
+CREATE PROC sp_upd_borrower
+	@borrower_id int, @fname nvarchar(60), @lname nvarchar(60), @phone_num varchar(15)
+AS
+	BEGIN TRY
+		UPDATE borrower
+		SET fname = @fname,
+			lname = @lname,
+			phone_num = @phone_num
+		WHERE borrower_id = @borrower_id;
+	END TRY
+	BEGIN CATCH
+		PRINT 'An error occurred.';
+			PRINT 'Message: ' + CONVERT(VARCHAR(200), ERROR_MESSAGE());
+	END CATCH
+GO
+GRANT EXECUTE ON sp_upd_borrower TO diskUserkj;
+go
+EXEC sp_upd_borrower 22, 'Christopher', 'Robin2', '253-454-7898' 
+go
+EXEC sp_upd_borrower 22, 'Christopher', 'Robin2', NULL
+go
+
+USE [disk_inventorykj]
+GO
+DROP PROC IF EXISTS sp_del_borrower;
+go
+CREATE PROC sp_del_borrower
+	@borrower_id int
+AS
+  BEGIN TRY
+	DELETE FROM [dbo].[borrower]
+		  WHERE borrower_id = @borrower_id; --22
+  END TRY
+  BEGIN CATCH
+	PRINT 'An error occurred.';
+	PRINT 'Message: ' + CONVERT(VARCHAR(200), ERROR_MESSAGE());
+  END CATCH
+GO
+
+-- add perms
+GRANT EXECUTE ON sp_del_borrower TO diskUserkj
+go
+EXEC sp_del_borrower 22;  --Works without error
+go
+EXEC sp_del_borrower 3;  --- controlled error
+go
